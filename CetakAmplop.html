@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mama Yuni</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --bg:#FAF8F4;
+    --panel:#FFFFFF;
+    --ink:#20241F;
+    --ink-soft:#5B6158;
+    --line:#DEDACF;
+    --accent:#2F5D46;
+    --accent-soft:#E7EFE9;
+    --danger:#AA4A34;
+    box-sizing:border-box;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#181A16; --panel:#20231D; --ink:#EDEAE0; --ink-soft:#A7ADA0;
+      --line:#33362C; --accent:#7FBF9C; --accent-soft:#26302A; --danger:#E08469;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#181A16; --panel:#20231D; --ink:#EDEAE0; --ink-soft:#A7ADA0;
+    --line:#33362C; --accent:#7FBF9C; --accent-soft:#26302A; --danger:#E08469;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-padding-top:env(safe-area-inset-top,0px);}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    min-height:100%;
+  }
+  .wrap{ max-width:920px; margin:0 auto; padding:28px 20px 120px; }
+  h1{ font-size:1.4rem; font-weight:700; margin:0 0 2px; letter-spacing:-0.01em; }
+  .sub{ color:var(--ink-soft); font-size:0.88rem; margin:0 0 22px; }
+
+  .panel{
+    background:var(--panel); border:1px solid var(--line); border-radius:10px;
+    padding:18px; margin-bottom:16px;
+  }
+  .row{ display:flex; flex-wrap:wrap; gap:12px; align-items:center; }
+  .row + .row{ margin-top:12px; }
+
+  label{ font-size:0.8rem; color:var(--ink-soft); }
+  input[type="text"], input[type="number"]{
+    font:inherit; font-size:0.92rem; padding:8px 10px; border:1px solid var(--line);
+    border-radius:7px; background:var(--bg); color:var(--ink); outline:none;
+  }
+  input[type="text"]:focus, input[type="number"]:focus{ border-color:var(--accent); }
+  input[type="number"]{ width:64px; }
+  input[type="range"]{ accent-color:var(--accent); }
+
+  button{
+    font:inherit; font-size:0.86rem; font-weight:600; padding:9px 14px; border-radius:7px;
+    border:1px solid var(--line); background:var(--panel); color:var(--ink); cursor:pointer;
+  }
+  button:hover{ border-color:var(--accent); }
+  button.primary{ background:var(--accent); border-color:var(--accent); color:#fff; }
+  button.primary:hover{ opacity:0.92; }
+  button.ghost{ background:transparent; }
+  button:disabled{ opacity:0.45; cursor:not-allowed; }
+  .fileBtn{ position:relative; overflow:hidden; }
+  .fileBtn input[type="file"]{
+    position:absolute; inset:0; opacity:0; cursor:pointer;
+  }
+
+  .status{ font-size:0.85rem; color:var(--ink-soft); }
+  .status b{ color:var(--ink); }
+
+  .empty{
+    text-align:center; padding:48px 20px; color:var(--ink-soft);
+  }
+  .empty svg{ opacity:0.5; margin-bottom:10px; }
+
+  .toolbar{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between; }
+  .search{ flex:1; min-width:180px; }
+  .search input{ width:100%; }
+
+  table{ width:100%; border-collapse:collapse; font-size:0.9rem; }
+  thead th{
+    text-align:left; font-size:0.74rem; color:var(--ink-soft); font-weight:600;
+    padding:8px 8px; border-bottom:1px solid var(--line); position:sticky; top:0; background:var(--panel);
+  }
+  tbody td{ padding:7px 8px; border-bottom:1px solid var(--line); }
+  tbody tr:hover{ background:var(--accent-soft); }
+  .rowRed td{ color:var(--danger); }
+  .tagCheck{
+    font-size:0.68rem; font-weight:700; letter-spacing:0.02em; color:var(--danger);
+    border:1px solid var(--danger); border-radius:4px; padding:1px 5px; margin-left:8px;
+  }
+  .legend{ display:flex; align-items:center; gap:8px; font-size:0.8rem; color:var(--ink-soft); margin-top:10px; }
+  .legend .dot{ width:9px; height:9px; border-radius:50%; background:var(--danger); display:inline-block; }
+  .tblScroll{ max-height:52vh; overflow-y:auto; overflow-x:auto; border:1px solid var(--line); border-radius:8px; }
+  .colNo{ width:44px; color:var(--ink-soft); }
+  .colChk{ width:34px; }
+
+  .barBottom{
+    position:fixed; left:0; right:0; bottom:0; background:var(--panel);
+    border-top:1px solid var(--line); padding:12px 20px; padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));
+    display:flex; align-items:center; justify-content:center; gap:16px; flex-wrap:wrap;
+  }
+  .barBottom .count{ font-size:0.88rem; }
+  .barBottom .count b{ color:var(--accent); }
+
+  details{ font-size:0.86rem; }
+  summary{ cursor:pointer; color:var(--ink-soft); font-weight:600; }
+  .settingsGrid{ display:flex; flex-wrap:wrap; gap:20px; margin-top:12px; }
+  .settingsGrid .field{ display:flex; flex-direction:column; gap:6px; min-width:150px; }
+  .settingsGrid .field .val{ font-size:0.78rem; color:var(--ink-soft); }
+
+  /* --- live envelope preview --- */
+  .previewOuter{ display:flex; justify-content:center; padding:6px 0 2px; }
+  .previewEnvelope{
+    width:304px; height:190px; background:#fff; border:1px solid var(--line); border-radius:2px;
+    box-shadow:0 2px 10px rgba(0,0,0,0.08); position:relative; overflow:hidden; flex-shrink:0;
+  }
+  .previewText{
+    position:absolute; left:0; right:0; text-align:center; color:#111;
+    font-family:Cambria,Georgia,"Times New Roman",serif; font-weight:700;
+  }
+  .previewText .nama{ display:block; }
+  .previewText .cabang{ display:block; margin-top:0.25em; }
+
+  /* --- print output, hidden on screen --- */
+  #printArea{ display:none; }
+  @media print{
+    body > *:not(#printArea){ display:none !important; }
+    #printArea{ display:block !important; }
+    .amplopPage{
+      width:152mm; height:95mm; position:relative; page-break-after:always;
+    }
+    .amplopPage:last-child{ page-break-after:auto; }
+    .amplopText{
+      position:absolute; left:0; right:0; text-align:center; color:#000;
+      font-family:Cambria,Georgia,"Times New Roman",serif; font-weight:700;
+    }
+    .amplopText .nama{ display:block; }
+    .amplopText .cabang{ display:block; margin-top:0.25em; }
+  }
+  @page{ size:152mm 95mm; margin:0; }
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+
+  <h1>Cetak Amplop KKA</h1>
+  <p class="sub">Amplop 104 &middot; 95 &times; 152 mm &middot; nama dan cabang otomatis dari database</p>
+
+  <div class="panel">
+    <div class="row toolbar">
+      <div class="row" style="gap:10px;">
+        <button class="fileBtn primary" id="uploadBtn">
+          Unggah database (.xlsx)
+          <input type="file" id="fileInput" accept=".xlsx,.xls">
+        </button>
+        <span class="status" id="fileStatus">Belum ada database dimuat.</span>
+      </div>
+      <button class="ghost" id="clearBtn" style="display:none;">Hapus data</button>
+    </div>
+  </div>
+
+  <div id="emptyState" class="panel empty">
+    <div>Unggah file Excel (seperti <b>Daftar Ammplop.xlsx</b>) untuk mulai.<br>
+    Sistem membaca sheet berisi kolom <b>Nama</b> dan <b>Cabang</b> (mis. sheet &ldquo;KECIL&rdquo;).</div>
+  </div>
+
+  <div id="mainArea" style="display:none;">
+
+    <div class="panel">
+      <div class="row" style="justify-content:space-between;">
+        <div class="row" style="gap:10px;">
+          <label>Pratinjau amplop</label>
+        </div>
+      </div>
+      <div class="previewOuter">
+        <div class="previewEnvelope">
+          <div class="previewText" id="previewText">
+            <span class="nama">NAMA CONTOH</span>
+            <span class="cabang">CABANG</span>
+          </div>
+        </div>
+      </div>
+      <details>
+        <summary>Pengaturan tampilan &amp; posisi cetak</summary>
+        <div class="settingsGrid">
+          <div class="field">
+            <label>Ukuran huruf nama <span class="val" id="fsNameVal">13pt</span></label>
+            <input type="range" id="fsName" min="8" max="24" value="13">
+          </div>
+          <div class="field">
+            <label>Ukuran huruf cabang <span class="val" id="fsCabangVal">11pt</span></label>
+            <input type="range" id="fsCabang" min="8" max="24" value="11">
+          </div>
+          <div class="field">
+            <label>Posisi vertikal <span class="val" id="posYVal">58%</span></label>
+            <input type="range" id="posY" min="10" max="90" value="58">
+          </div>
+        </div>
+      </details>
+    </div>
+
+    <div class="panel">
+      <div class="row toolbar">
+        <div class="search">
+          <input type="text" id="searchBox" placeholder="Cari nama atau cabang…">
+        </div>
+        <div class="row" style="gap:8px;">
+          <button id="selectAllBtn">Pilih semua</button>
+          <button id="selectNoneBtn">Batal semua</button>
+        </div>
+      </div>
+      <div class="row" style="margin-top:12px;">
+        <label>Pilih rentang No.</label>
+        <input type="number" id="rangeFrom" placeholder="dari">
+        <span>&ndash;</span>
+        <input type="number" id="rangeTo" placeholder="sampai">
+        <button id="rangeBtn">Terapkan rentang</button>
+      </div>
+      <div class="legend">
+        <span class="dot"></span> Nama berwarna merah di file Excel tidak otomatis tercentang &mdash; admin cek &amp; centang manual.
+      </div>
+      <div class="tblScroll" style="margin-top:10px;">
+        <table>
+          <thead>
+            <tr>
+              <th class="colChk"></th>
+              <th class="colNo">No</th>
+              <th>Nama</th>
+              <th>Cabang</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="barBottom" id="bottomBar" style="display:none;">
+  <span class="count"><b id="selCount">0</b> amplop dipilih</span>
+  <button class="primary" id="printBtn">Cetak amplop</button>
+</div>
+
+<div id="printArea"></div>
+
+<script>
+(function(){
+  var STORAGE_KEY = 'amplop-kka-data';
+  var SETTINGS_KEY = 'amplop-kka-settings';
+  var data = [];        // {nama, cabang}
+  var selected = new Set();
+  var filterText = '';
+  var settings = { fsName: 13, fsCabang: 11, posY: 58 };
+
+  var $ = function(id){ return document.getElementById(id); };
+
+  function safeGet(key){
+    try { var v = localStorage.getItem(key); return v ? JSON.parse(v) : null; }
+    catch(e){ return null; }
+  }
+  function safeSet(key, val){
+    try { localStorage.setItem(key, JSON.stringify(val)); } catch(e){}
+  }
+
+  function loadFromStorage(){
+    var d = safeGet(STORAGE_KEY);
+    var s = safeGet(SETTINGS_KEY);
+    if(s){ settings = Object.assign(settings, s); }
+    if(d && Array.isArray(d) && d.length){
+      data = d;
+      selected = new Set();
+      data.forEach(function(row, i){ if(!row.merah) selected.add(i); });
+      showMain();
+    }
+    applySettingsToUI();
+  }
+
+  function applySettingsToUI(){
+    $('fsName').value = settings.fsName;
+    $('fsCabang').value = settings.fsCabang;
+    $('posY').value = settings.posY;
+    $('fsNameVal').textContent = settings.fsName + 'pt';
+    $('fsCabangVal').textContent = settings.fsCabang + 'pt';
+    $('posYVal').textContent = settings.posY + '%';
+    updatePreview();
+  }
+
+  function showMain(){
+    $('emptyState').style.display = 'none';
+    $('mainArea').style.display = 'block';
+    $('bottomBar').style.display = 'flex';
+    $('clearBtn').style.display = 'inline-block';
+    $('fileStatus').innerHTML = '<b>' + data.length + '</b> nama dimuat';
+    renderTable();
+    updateCount();
+  }
+
+  function isRedCell(cell){
+    if(!cell || !cell.s || !cell.s.font || !cell.s.font.color) return false;
+    var c = cell.s.font.color;
+    var rgb = c.rgb || '';
+    return /FF0000$/i.test(rgb); // matches 'FFFF0000' and 'FF0000'
+  }
+
+  function parseWorkbook(workbook){
+    var sheetName = workbook.SheetNames.find(function(n){
+      return /kecil/i.test(n);
+    }) || workbook.SheetNames[0];
+    var sheet = workbook.Sheets[sheetName];
+    var ref = sheet['!ref'];
+    if(!ref) return [];
+    var range = XLSX.utils.decode_range(ref);
+    var out = [];
+    for(var R = range.s.r; R <= range.e.r; R++){
+      var cellA = sheet[XLSX.utils.encode_cell({ r: R, c: 0 })];
+      var cellB = sheet[XLSX.utils.encode_cell({ r: R, c: 1 })];
+      var nama = (cellA && cellA.v !== undefined && cellA.v !== null) ? String(cellA.v).trim() : '';
+      var cabang = (cellB && cellB.v !== undefined && cellB.v !== null) ? String(cellB.v).trim() : '';
+      if(!nama) continue;
+      if(nama.toUpperCase() === 'NAMA') continue; // header row (may repeat)
+      out.push({ nama: nama, cabang: cabang, merah: isRedCell(cellA) });
+    }
+    return out;
+  }
+
+  $('fileInput').addEventListener('change', function(e){
+    var file = e.target.files[0];
+    if(!file) return;
+    var reader = new FileReader();
+    reader.onload = function(ev){
+      try {
+        var wb = XLSX.read(ev.target.result, { type: 'array', cellStyles: true });
+        var parsed = parseWorkbook(wb);
+        if(!parsed.length){
+          $('fileStatus').textContent = 'Tidak ditemukan data Nama pada file ini.';
+          return;
+        }
+        data = parsed;
+        selected = new Set();
+        data.forEach(function(row, i){ if(!row.merah) selected.add(i); });
+        safeSet(STORAGE_KEY, data);
+        showMain();
+      } catch(err){
+        $('fileStatus').textContent = 'Gagal membaca file: ' + err.message;
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  });
+
+  $('clearBtn').addEventListener('click', function(){
+    data = []; selected = new Set();
+    try { localStorage.removeItem(STORAGE_KEY); } catch(e){}
+    $('mainArea').style.display = 'none';
+    $('bottomBar').style.display = 'none';
+    $('clearBtn').style.display = 'none';
+    $('emptyState').style.display = 'block';
+    $('fileStatus').textContent = 'Belum ada database dimuat.';
+    $('fileInput').value = '';
+  });
+
+  function filteredIndices(){
+    if(!filterText) return data.map(function(_, i){ return i; });
+    var q = filterText.toLowerCase();
+    var res = [];
+    data.forEach(function(row, i){
+      if(row.nama.toLowerCase().indexOf(q) !== -1 || row.cabang.toLowerCase().indexOf(q) !== -1){
+        res.push(i);
+      }
+    });
+    return res;
+  }
+
+  function renderTable(){
+    var idxs = filteredIndices();
+    var tbody = $('tbody');
+    var html = '';
+    idxs.forEach(function(i){
+      var row = data[i];
+      var checked = selected.has(i) ? 'checked' : '';
+      var trClass = row.merah ? ' class="rowRed"' : '';
+      var tag = row.merah ? '<span class="tagCheck">cek manual</span>' : '';
+      html += '<tr' + trClass + '>' +
+        '<td class="colChk"><input type="checkbox" data-idx="' + i + '" ' + checked + '></td>' +
+        '<td class="colNo">' + (i + 1) + '</td>' +
+        '<td>' + escapeHtml(row.nama) + tag + '</td>' +
+        '<td>' + escapeHtml(row.cabang) + '</td>' +
+        '</tr>';
+    });
+    tbody.innerHTML = html || '<tr><td colspan="4" style="padding:16px; color:var(--ink-soft);">Tidak ada hasil.</td></tr>';
+    Array.prototype.forEach.call(tbody.querySelectorAll('input[type="checkbox"]'), function(cb){
+      cb.addEventListener('change', function(){
+        var i = parseInt(cb.getAttribute('data-idx'), 10);
+        if(cb.checked) selected.add(i); else selected.delete(i);
+        updateCount();
+      });
+    });
+  }
+
+  function escapeHtml(s){
+    return s.replace(/[&<>"']/g, function(c){
+      return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+    });
+  }
+
+  function updateCount(){
+    $('selCount').textContent = selected.size;
+    $('printBtn').disabled = selected.size === 0;
+  }
+
+  $('searchBox').addEventListener('input', function(e){
+    filterText = e.target.value;
+    renderTable();
+  });
+
+  $('selectAllBtn').addEventListener('click', function(){
+    filteredIndices().forEach(function(i){ selected.add(i); });
+    renderTable(); updateCount();
+  });
+  $('selectNoneBtn').addEventListener('click', function(){
+    filteredIndices().forEach(function(i){ selected.delete(i); });
+    renderTable(); updateCount();
+  });
+  $('rangeBtn').addEventListener('click', function(){
+    var from = parseInt($('rangeFrom').value, 10);
+    var to = parseInt($('rangeTo').value, 10);
+    if(isNaN(from) || isNaN(to)) return;
+    selected = new Set();
+    for(var n = from; n <= to; n++){
+      if(n >= 1 && n <= data.length) selected.add(n - 1);
+    }
+    renderTable(); updateCount();
+  });
+
+  function updatePreview(){
+    var nameEl = document.querySelector('#previewText .nama');
+    var cabangEl = document.querySelector('#previewText .cabang');
+    nameEl.style.fontSize = settings.fsName + 'pt';
+    cabangEl.style.fontSize = settings.fsCabang + 'pt';
+    $('previewText').style.top = settings.posY + '%';
+    $('previewText').style.transform = 'translateY(-50%)';
+  }
+
+  ['fsName','fsCabang','posY'].forEach(function(id){
+    $(id).addEventListener('input', function(e){
+      settings[id] = parseInt(e.target.value, 10);
+      $(id + 'Val').textContent = settings[id] + (id === 'posY' ? '%' : 'pt');
+      updatePreview();
+      safeSet(SETTINGS_KEY, settings);
+    });
+  });
+
+  $('printBtn').addEventListener('click', function(){
+    var idxs = Array.from(selected).sort(function(a,b){ return a - b; });
+    if(!idxs.length) return;
+    var html = '';
+    idxs.forEach(function(i){
+      var row = data[i];
+      var colorStyle = row.merah ? 'color:#D0272C;' : 'color:#000;';
+      html += '<div class="amplopPage"><div class="amplopText" style="top:' + settings.posY + '%; transform:translateY(-50%);">' +
+        '<span class="nama" style="font-size:' + settings.fsName + 'pt; ' + colorStyle + '">' + escapeHtml(row.nama) + '</span>' +
+        '<span class="cabang" style="font-size:' + settings.fsCabang + 'pt; ' + colorStyle + '">' + escapeHtml(row.cabang) + '</span>' +
+        '</div></div>';
+    });
+    $('printArea').innerHTML = html;
+    setTimeout(function(){ window.print(); }, 60);
+  });
+
+  loadFromStorage();
+})();
+</script>
+</body>
+</html>
